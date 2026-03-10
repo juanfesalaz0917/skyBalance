@@ -341,16 +341,29 @@ class AVL:
 
   # Método para el balanceo de tipo LR
   def __balanceLR(self, topNode):
-    raise Exception("No implementado")
-
+    # se obtiene el hijo izquierdo del superior
+    middleNode = topNode.getLeftChild()
+    # se obtiene el hijo derecho del nodo de la mitad para pasarlo luego al topNode que baja como hijo izquierdo del nodo de la mitad
+    rightChildOfMiddle = middleNode.getRightChild()
+    # se realiza una rotación RR entre el nodo de la mitad y su hijo derecho
+    self.__balanceRR(middleNode)
+    # luego se realiza una rotación LL entre el nodo superior y el nuevo nodo de la mitad (que ahora es el hijo derecho del nodo de la mitad original)
+    self.__balanceLL(topNode)
 
   # Método para el balanceo de tipo RL
   def __balanceRL(self, topNode):
-    raise Exception("No implementado")
+    # se obtiene el hijo derecho del superior
+    middleNode = topNode.getRightChild()
+    # se obtiene el hijo izquierdo del nodo de la mitad para pasarlo luego al topNode que baja como hijo derecho del nodo de la mitad
+    leftChildOfMiddle = middleNode.getLeftChild()
+    # se realiza una rotación LL entre el nodo de la mitad y su hijo izquierdo
+    self.__balanceLL(middleNode)
+    # luego se realiza una rotación RR entre el nodo superior y el nuevo nodo de la mitad (que ahora es el hijo izquierdo del nodo de la mitad original)
+    self.__balanceRR(topNode)
 
   # Método para el balanceo de tipo LL
   def __balanceLL(self, topNode):
-    # se obtiene el hijo ziquiuerdo del superior
+    # se obtiene el hijo izquierdo del superior
     middleNode = topNode.getLeftChild()
 
     # se obtiene el padre del nodo superior (puede que sea la raiz y no tenga padre, es decir que es None)
