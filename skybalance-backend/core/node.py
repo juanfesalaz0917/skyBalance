@@ -1,4 +1,5 @@
 #Clase que permite instanciar Nodos para alimentar un árbol.
+
 class Node:
   # El constructor permite la asignación de un valor
   # También inicia tanto el padre como los hijos en None
