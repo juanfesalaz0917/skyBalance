@@ -1,209 +1,246 @@
-# Clase árbol BST para la administración de los nodos
+"""Binary search tree implementation used by SkyBalance."""
+
+from collections import deque
+
+
 class BST:
+    """Binary search tree ordered by node value."""
 
-  # Constructor del árbol
-  def __init__(self):
-    self.root = None
+    def __init__(self):
+        """Initialize an empty BST."""
+        self.root = None
 
-  # Método que permite insertar un nodo en el árbol
-  def insert(self, node):
-    # verificar si existe una raiz en el árbol
-    if self.root is None:
-      self.root = node
-    else:
-      # si existe una raiz, se inicia el proceso de inserción
-      self.__insert(self.root, node)
+    def get_root(self):
+        """Return the root node."""
+        return self.root
 
-  # Método privado que maneja del recursividad de insertar en el árbol
-  def __insert(self, currentRoot, node):
-    # Verificar si el valor es igual
-    if(node.getValue() == currentRoot.getValue()):
-      raise Exception(f"El valor {node.getValue()} ya existe en el árbol.")
-    else:
-      # Se verifica si el valor a insertar es mayor que el actual raiz
-      if(node.getValue() > currentRoot.getValue()):
-        # Si no tiene hijo derecho, se asigna el nuevo nodo como hijo derecho,
-        # y el padre de ese nuevo nodo será el actual raiz
-        if(currentRoot.getRightChild() is None):
-          # se asigna en nodo como hijo derecho
-          currentRoot.setRightChild(node)
-          # se asigna como padre del nuevo nodo a la actual raiz
-          node.setParent(currentRoot)
-        else:
-          # Si tiene hijo derecho, se llama recursivamente al hijo derecho para la inserción del nuevo nodo
-          self.__insert(currentRoot.getRightChild(), node)
-      else:
-        #el valor del nodo a insertar es menor que la actual raiz
-        # Si no tiene hijo izquierdo, se asigna el nuevo nodo como hijo izquierdo,
-        if currentRoot.getLeftChild() is None:
-          # asignar nuevo nodo como hijo isquierdo
-          currentRoot.setLeftChild(node)
-          # asignar como padre del nuevo nodo al actual raiz
-          node.setParent(currentRoot)
-        else:
-          # Si tiene hijo izquierdo, se llama recursivamente a __insert con el hijo izquierdo como nueva raiz
-          self.__insert(currentRoot.getLeftChild(), node)
+    def insert(self, node):
+        """Insert a node into the BST."""
+        if self.root is None:
+            self.root = node
+            return
 
-  # Método de búsqueda de un nodo con base en su valor
-  def search(self, value):
-    if self.root is None:
-      raise Exception("El árbol está vacío.")
-    else:
-      return self.__search(self.root, value)
+        self.__insert(self.root, node)
 
-  # Método para la búsqueda de manera recursiva
-  def __search(self, currentRoot, value):
-    if value == currentRoot.getValue():
-      return currentRoot
-    if value > currentRoot.getValue():
-      if currentRoot.getRightChild() is None:
-        return None
-      else:
-        return self.__search(currentRoot.getRightChild(), value)
-    else:
-      if currentRoot.getLeftChild() is None:
-        return None
-      else:
-        return self.__search(currentRoot.getLeftChild(), value)
+    def __insert(self, current_root, node):
+        """Insert recursively from the given root."""
+        if node.get_value() == current_root.get_value():
+            raise ValueError(f"El valor {node.get_value()} ya existe en el árbol.")
 
-  # Método para eliminar un nodo
-  # Se deben considerar los 3 casos: no hoja, no con un hijo y nodo con 2 hijos
-  def delete(self, value):
-    # Verificar si el árbol tiene al menos la raiz
-    if self.root is None:
-      print("El árbol está vacío.")
-    else:
-      # Se busca el nodo con el valor
-      node = self.search(value)
-      # Si no se encuentra el nodo, se debe mostrar el mensaje de error
-      if node is None:
-        print(f"El nodo con valor {value} no existe en el árbol")
-      else:
+        if node.get_value() > current_root.get_value():
+            if current_root.get_right_child() is None:
+                current_root.set_right_child(node)
+                node.set_parent(current_root)
+                return
+
+            self.__insert(current_root.get_right_child(), node)
+            return
+
+        if current_root.get_left_child() is None:
+            current_root.set_left_child(node)
+            node.set_parent(current_root)
+            return
+
+        self.__insert(current_root.get_left_child(), node)
+
+    def search(self, value):
+        """Search a node by value and return the node or None."""
+        if self.root is None:
+            raise ValueError("El árbol está vacío.")
+
+        return self.__search(self.root, value)
+
+    def __search(self, current_root, value):
+        """Search recursively from the given root."""
+        if value == current_root.get_value():
+            return current_root
+
+        if value > current_root.get_value():
+            if current_root.get_right_child() is None:
+                return None
+
+            return self.__search(current_root.get_right_child(), value)
+
+        if current_root.get_left_child() is None:
+            return None
+
+        return self.__search(current_root.get_left_child(), value)
+
+    def delete(self, value):
+        """Delete a single node by value."""
+        if self.root is None:
+            print("El árbol está vacío.")
+            return
+
+        node = self.search(value)
+        if node is None:
+            print(f"El nodo con valor {value} no existe en el árbol")
+            return
+
         self.__delete(node)
 
-  # Método para identificar el caso y eiminar el nodo
-  def __delete(self, node):
-    deletionCase = self.__identifyDeletionCase(node)
-    match deletionCase:
-      case 1:
-        self.__deleteLeafNode(node)
+    def __delete(self, node):
+        """Delete a node according to its deletion case."""
+        deletion_case = self.__identify_deletion_case(node)
+        match deletion_case:
+            case 1:
+                self.__delete_leaf_node(node)
+            case 2:
+                self.__delete_node_with_one_child(node)
+            case 3:
+                self.__delete_node_with_two_children(node)
 
+    def __delete_node_with_two_children(self, node):
+        """Delete a node with two children using its inorder predecessor."""
+        predecessor = self.__get_predecessor(node)
+        node.set_value(predecessor.get_value())
 
-  # Método para eliminar un nodo hoja (caso 1)
-  def __deleteLeafNode(self, node):
-    if node.getValue() == self.root.getValue():
-      self.root = None
-    else:
-      parentNode = node.getParent()
-      if node.getValue() < parentNode.getValue():
-        parentNode.setLeftChild(None)
-      else:
-        parentNode.setRightChild(None)
-      node.setParent(None)
+        predecessor_case = self.__identify_deletion_case(predecessor)
+        if predecessor_case == 1:
+            self.__delete_leaf_node(predecessor)
+            return
 
+        self.__delete_node_with_one_child(predecessor)
 
-  # Identificar los casos de eliminación
-  # caso 1 cuando es nodo hoja
-  # caso 2 cuando solo tiene un hijo
-  # caso 3 cuando tiene los dos hijos
-  def __identifyDeletionCase(self, node):
-    # se inicia pensando que es caso 2 (un solo hijo)
-    deletionCase = 2
-    # se verifica si es hoja y se cmabia el caso a 2
-    if node.getLeftChild() is None and node.getRightChild() is None:
-      deletionCase = 1
-    # sino se verifica si tiene dos hijos y se cambia a caso 3
-    elif node.getLeftChild() is not None and node.getRightChild() is not None:
-      deletionCase = 3
-    return deletionCase
+    def __get_predecessor(self, node):
+        """Return the inorder predecessor of the given node."""
+        current = node.get_left_child()
+        while current.get_right_child() is not None:
+            current = current.get_right_child()
+        return current
 
+    def __delete_node_with_one_child(self, node):
+        """Delete a node that has exactly one child."""
+        if node.get_left_child() is not None:
+            child_node = node.get_left_child()
+        else:
+            child_node = node.get_right_child()
 
-  # Método para recorrido en anchura
-  def breadthFirstSearch(self):
-    if self.root is None:
-      raise Exception("El árbol está vacío.")
-    else:
-      return self.__breadthFirstSearch(self.root)
+        parent_node = node.get_parent()
 
-  # Método para mostrar el recorrido en anchura
-  # se obtiene una lista con los valores de los nodos recorridos
-  def __breadthFirstSearch(self, currentRoot):
-    queue = []
-    result = []
-    queue.append(currentRoot)
-    while len(queue) > 0:
-      currentRoot = queue.pop(0)
-      result.append(currentRoot.getValue())
-      if currentRoot.getLeftChild() is not None:
-        queue.append(currentRoot.getLeftChild())
-      if currentRoot.getRightChild() is not None:
-        queue.append(currentRoot.getRightChild())
-    return result
+        if parent_node is None:
+            self.root = child_node
+            child_node.set_parent(None)
+        else:
+            if parent_node.get_left_child() == node:
+                parent_node.set_left_child(child_node)
+            else:
+                parent_node.set_right_child(child_node)
 
-  # Método para recorrido en profundidad pre-order
-  def preOrderTraversal(self):
-    if self.root is None:
-      raise Exception("El árbol está vacío.")
-    else:
-      return self.__preOrderTraversal(self.root)
+            child_node.set_parent(parent_node)
 
-  # Root - Left - Right
-  def __preOrderTraversal(self, currentRoot):
-    print(currentRoot.getValue())
-    if currentRoot.getLeftChild() is not None:
-      self.__preOrderTraversal(currentRoot.getLeftChild())
-    if currentRoot.getRightChild() is not None:
-      self.__preOrderTraversal(currentRoot.getRightChild())
+        node.set_left_child(None)
+        node.set_right_child(None)
+        node.set_parent(None)
 
-  # Método para recorrido en profundidad in-order
+    def __delete_leaf_node(self, node):
+        """Delete a leaf node."""
+        if node == self.root:
+            self.root = None
+            return
 
-  def inOrderTraversal(self):
-    if self.root is None:
-      raise Exception("El árbol está vacío.")
-    else:
-      return self.__inOrderTraversal(self.root)
+        parent_node = node.get_parent()
+        if parent_node.get_left_child() == node:
+            parent_node.set_left_child(None)
+        else:
+            parent_node.set_right_child(None)
 
-  # Left - Root - Right
-  def __inOrderTraversal(self, currentRoot):
-    if currentRoot.getLeftChild() is not None:
-      self.__inOrderTraversal(currentRoot.getLeftChild())
+        node.set_parent(None)
 
-    print(currentRoot.getValue())
+    def __identify_deletion_case(self, node):
+        """Identify whether a node is a leaf, has one child, or has two."""
+        if node.get_left_child() is None and node.get_right_child() is None:
+            return 1
 
-    if currentRoot.getRightChild() is not None:
-      self.__inOrderTraversal(currentRoot.getRightChild())
+        if node.get_left_child() is not None and node.get_right_child() is not None:
+            return 3
 
-  # Método para recorrido en profundidad pos-order
-  def posOrderTraversal(self):
-    if self.root is None:
-      raise Exception("El árbol está vacío.")
-    else:
-      return self.__posOrderTraversal(self.root)
+        return 2
 
-  # Left - Root - Right
-  def __posOrderTraversal(self, currentRoot):
-    if currentRoot.getLeftChild() is not None:
-      self.__posOrderTraversal(currentRoot.getLeftChild())
+    def breadth_first_search(self):
+        """Return a breadth-first traversal as a list of node values."""
+        if self.root is None:
+            raise ValueError("El árbol está vacío.")
 
-    if currentRoot.getRightChild() is not None:
-      self.__posOrderTraversal(currentRoot.getRightChild())
-    print(currentRoot.getValue())
+        return self.__breadth_first_search(self.root)
 
-  # Método para calcular la altura de un nodo
-  def calculateHeight(self, node):
-    if node is None:
-      return -1
-    else:
-      return self.__calculateHeight(node)
+    def __breadth_first_search(self, current_root):
+        """Traverse the tree in breadth-first order from the given root."""
+        queue = deque([current_root])
+        result = []
 
-  # Método recursivo para calcular la altura de un nodo
-  def __calculateHeight(self, currentRoot):
-    if currentRoot is None:
-      return -1
-    else:
-      leftHeight = self.__calculateHeight(currentRoot.getLeftChild())
-      rightHeight = self.__calculateHeight(currentRoot.getRightChild())
-      #print(f"Altura del hijo izquierdo {leftHeight}")
-      #print(f"Altura del hijo derecho {rightHeight}")
-      maxHeight = max(leftHeight, rightHeight)
-      return 1 + maxHeight 
+        while queue:
+            current_root = queue.popleft()
+            result.append(current_root.get_value())
+
+            if current_root.get_left_child() is not None:
+                queue.append(current_root.get_left_child())
+            if current_root.get_right_child() is not None:
+                queue.append(current_root.get_right_child())
+
+        return result
+
+    def pre_order_traversal(self):
+        """Print the tree in pre-order traversal."""
+        if self.root is None:
+            raise ValueError("El árbol está vacío.")
+
+        self.__pre_order_traversal(self.root)
+
+    def __pre_order_traversal(self, current_root):
+        """Traverse the tree in pre-order from the given root."""
+        print(current_root.get_value())
+        if current_root.get_left_child() is not None:
+            self.__pre_order_traversal(current_root.get_left_child())
+        if current_root.get_right_child() is not None:
+            self.__pre_order_traversal(current_root.get_right_child())
+
+    def in_order_traversal(self):
+        """Print the tree in in-order traversal."""
+        if self.root is None:
+            raise ValueError("El árbol está vacío.")
+
+        self.__in_order_traversal(self.root)
+
+    def __in_order_traversal(self, current_root):
+        """Traverse the tree in in-order from the given root."""
+        if current_root.get_left_child() is not None:
+            self.__in_order_traversal(current_root.get_left_child())
+
+        print(current_root.get_value())
+
+        if current_root.get_right_child() is not None:
+            self.__in_order_traversal(current_root.get_right_child())
+
+    def post_order_traversal(self):
+        """Print the tree in post-order traversal."""
+        if self.root is None:
+            raise ValueError("El árbol está vacío.")
+
+        self.__post_order_traversal(self.root)
+
+    def __post_order_traversal(self, current_root):
+        """Traverse the tree in post-order from the given root."""
+        if current_root.get_left_child() is not None:
+            self.__post_order_traversal(current_root.get_left_child())
+
+        if current_root.get_right_child() is not None:
+            self.__post_order_traversal(current_root.get_right_child())
+
+        print(current_root.get_value())
+
+    def calculate_height(self, node):
+        """Return the height of the given node."""
+        if node is None:
+            return -1
+
+        return self.__calculate_height(node)
+
+    def __calculate_height(self, current_root):
+        """Calculate node height recursively."""
+        if current_root is None:
+            return -1
+
+        left_height = self.__calculate_height(current_root.get_left_child())
+        right_height = self.__calculate_height(current_root.get_right_child())
+        return 1 + max(left_height, right_height)
