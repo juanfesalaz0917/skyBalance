@@ -1,5 +1,4 @@
 #Clase que permite instanciar Nodos para alimentar un árbol.
-
 class Node:
   # El constructor permite la asignación de un valor
   # También inicia tanto el padre como los hijos en None
@@ -8,6 +7,12 @@ class Node:
     self.parent = None
     self.leftChild = None
     self.rightChild = None
+    
+  def getValue(self):
+    return self.value
+ 
+  def setValue(self, value):
+    self.value = value
 
   # Método que permite asignar un padre al nodo
   # recibe la referencia al nodo padre que va a ser asignado
@@ -35,7 +40,14 @@ class Node:
   # Método para obtener la referencia al hijo derecho del nodo
   def getRightChild(self):
     return self.rightChild
-
-  # Método para obtener el valor del nodo
-  def getValue(self):
-    return self.value
+  
+  #Helpers 
+  
+  # Método para determinar si el nodo es una hoja (no tiene hijos)
+  def isLeaf(self) -> bool:
+    return self.leftChild is None and self.rightChild is None
+ 
+  # Método para determinar si el nodo es la raíz (no tiene padre)
+  def __repr__(self):
+    code = self.value.get_code() if self.value is not None else "None"
+    return f"Node(code={code})"
