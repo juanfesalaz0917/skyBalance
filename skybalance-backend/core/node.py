@@ -1,40 +1,53 @@
-#Clase que permite instanciar Nodos para alimentar un árbol.
+"""Node model used by the tree implementations."""
+
+
 class Node:
-  # El constructor permite la asignación de un valor
-  # También inicia tanto el padre como los hijos en None
-  def __init__(self, value):
-    self.value = value
-    self.parent = None
-    self.leftChild = None
-    self.rightChild = None
+    """Tree node that stores a value plus parent and child references."""
 
-  # Método que permite asignar un padre al nodo
-  # recibe la referencia al nodo padre que va a ser asignado
-  def setParent(self, parentNode):
-    self.parent = parentNode
+    def __init__(self, value):
+        """Initialize a node with empty links."""
+        self.value = value
+        self.parent = None
+        self.left_child = None
+        self.right_child = None
 
-  # Método que permite obtener la referencia al padre del nodo
-  def getParent(self):
-    return self.parent
+    def get_value(self):
+        """Return the stored value."""
+        return self.value
 
-  # Método que permite asignar un hijo izquierdo al nodo
-  # se recibe la referencia al hijo que se va a asignar
-  def setLeftChild(self, leftChildNode):
-    self.leftChild = leftChildNode
+    def set_value(self, value):
+        """Replace the stored value."""
+        self.value = value
 
-  # Método para obtener la referencia al hijo izquiero del nodo
-  def getLeftChild(self):
-    return self.leftChild
+    def set_parent(self, parent_node):
+        """Set the parent reference for the node."""
+        self.parent = parent_node
 
-  # Método que permite asignar un hijo derecho al nodo
-  # se recibe la referencia al hijo que se va a asignar
-  def setRightChild(self, rightChildNode):
-    self.rightChild = rightChildNode
+    def get_parent(self):
+        """Return the parent node or None."""
+        return self.parent
 
-  # Método para obtener la referencia al hijo derecho del nodo
-  def getRightChild(self):
-    return self.rightChild
+    def set_left_child(self, left_child_node):
+        """Set the left child reference."""
+        self.left_child = left_child_node
 
-  # Método para obtener el valor del nodo
-  def getValue(self):
-    return self.value
+    def get_left_child(self):
+        """Return the left child or None."""
+        return self.left_child
+
+    def set_right_child(self, right_child_node):
+        """Set the right child reference."""
+        self.right_child = right_child_node
+
+    def get_right_child(self):
+        """Return the right child or None."""
+        return self.right_child
+
+    def is_leaf(self) -> bool:
+        """Return True when the node has no children."""
+        return self.left_child is None and self.right_child is None
+
+    def __repr__(self):
+        """Return a compact debug representation of the node."""
+        code = self.value.get_code() if self.value is not None else "None"
+        return f"Node(code={code})"
