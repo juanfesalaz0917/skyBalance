@@ -1,6 +1,7 @@
 """AVL tree implementation used by SkyBalance."""
 
 from collections import deque
+from core.node import Node
 
 
 class AVL:
@@ -51,7 +52,7 @@ class AVL:
     def search(self, value):
         """Search a node by value and return the node or None."""
         if self.root is None:
-            raise ValueError("El árbol está vacío.")
+            return None
 
         return self.__search(self.root, value)
 
@@ -174,7 +175,46 @@ class AVL:
             raise ValueError("El árbol está vacío.")
 
         return self.__breadth_first_search(self.root)
-
+    
+    # Cancel — node + entire subtree
+    def cancel(self, value) -> int:
+        """
+        Cancel a flight — removes the node AND all its descendants.
+        This is different from delete: the entire subtree is dropped.
+        Returns the number of nodes removed.
+        Increments mass_cancellations counter.
+        """
+        if self.root is None:
+            return 0
+        
+        node = self.search(value)
+        if node is None:
+            return 0
+        
+        #Count how many nodes will be removed before detaching 
+        count = self.__count_subtree(node)
+        self.mass_cancellations += 1
+        
+        parent_node = node.get_parent()
+        
+        if parent_node is None:
+            # The cancelled node is the root - tree becomes empty
+            self.root = None
+        elif parent_node.get_left_child() == node:
+            parent_node.set_left_child(None)
+        else: 
+            parent_node.set_right_child(None)
+        
+        node.set_parent(None)
+        
+        # Rebalance upwards from the parent of the removed subtree, if not in stress mode
+        if parent_node is not None and not self.stress_mode:
+            self.__check_balance(parent_node)
+        
+        return count
+        
+    # Traversals 
+       
     def __breadth_first_search(self, current_root):
         """Traverse the tree in breadth-first order from the given root."""
         queue = deque([current_root])
@@ -239,12 +279,60 @@ class AVL:
             self.__post_order_traversal(current_root.get_right_child())
 
         print(current_root.get_value())
-
+        
+    # Traversals — return lists (used by services and API)
+    def get_breadth_first_list(self) -> list:
+        """Return a breadth-first traversal as a list of Flight objects."""
+        if self.root is None:
+            return []
+        return self.__breadth_first_search(self.root)
+    
+    def get_pre_order_list(self) -> list:
+        """Return a pre-order traversal as a list of Flight objects."""
+        result = []
+        self.__collect_pre_order(self.root, result)
+        return result
+        
+    def get_in_order_list(self) -> list:
+        """Return an in-order traversal as a list of Flight objects (sorted by code)."""
+        result = []
+        self.__collect_in_order(self.root, result)
+        return result
+    
+    def get_post_order_list(self) -> list:
+        """Return a post-order traversal as a list of Flight objects."""
+        result = []
+        self.__collect_post_order(self.root, result)
+        return result
+    
+    # Helper methods to collect traversals into lists
+    def __collect_in_order(self, node, result):
+        if node is None:
+            return
+        self.__collect_in_order(node.get_left_child(), result)
+        result.append(node.get_value())
+        self.__collect_in_order(node.get_right_child(), result)
+ 
+    def __collect_pre_order(self, node, result):
+        if node is None:
+            return
+        result.append(node.get_value())
+        self.__collect_pre_order(node.get_left_child(), result)
+        self.__collect_pre_order(node.get_right_child(), result)
+ 
+    def __collect_post_order(self, node, result):
+        if node is None:
+            return
+        self.__collect_post_order(node.get_left_child(), result)
+        self.__collect_post_order(node.get_right_child(), result)
+        result.append(node.get_value())
+        
+    # Metrics and utilities
+    
     def calculate_height(self, node):
         """Return the height of the given node."""
         if node is None:
             return -1
-
         return self.__calculate_height(node)
 
     def __calculate_height(self, current_root):
@@ -261,7 +349,87 @@ class AVL:
         left_child_height = self.calculate_height(node.get_left_child())
         right_child_height = self.calculate_height(node.get_right_child())
         return left_child_height - right_child_height
+    
+    def count_nodes(self) -> int:
+        """Return the total number of nodes in the tree."""
+        return self.__count_subtree(self.root)
+    
+    def __count_subtree(self, node) -> int:
+        if node is None:
+            return 0
+        return 1 + self.__count_subtree(node.get_left_child()) + self.__count_subtree(node.get_right_child())
+ 
+    def count_leaves(self) -> int:
+        """Return the number of leaf nodes in the tree."""
+        return self.__count_leaves(self.root)
+    
+    def __count_leaves(self, node) -> int:
+        if node is None:
+            return 0
+        if node.get_left_child() is None and node.get_right_child() is None:
+            return 1
+        return self.__count_leaves(node.get_left_child()) + self.__count_leaves(node.get_right_child())
 
+    def get_rotation_stats(self) -> dict:
+        """Return a copy of the rotation counters."""
+        return dict(self.rotation_count)
+    
+    # AVL Audit -  in stress mode
+    def audit_avl(self) -> dict:
+        """
+        Verify the AVL property across the entire tree.
+        Returns a report listing every inconsistent node.
+        Only useful after stress mode degrades the tree.
+        """
+        issues = []
+        self.__audit(self.root, issues)
+        return {
+            "valid":             len(issues) == 0,
+            "totalNodes":        self.count_nodes(),
+            "inconsistentNodes": issues,
+        }
+    
+    def __audit(self, node, issues: list):
+        """Recursively check every node for AVL property violations."""
+        if node is None:
+            return
+        bf = self.get_balance_factor(node)
+        if abs(bf) > 1:
+            issues.append({
+                "code":          node.get_value().get_code(),
+                "balanceFactor": bf,
+                "height":        self.calculate_height(node),
+            })
+        self.__audit(node.get_left_child(), issues)
+        self.__audit(node.get_right_child(), issues)
+        
+    # Stress mode / global rebalance 
+    def enable_stress_mode(self):
+        """Disable automatic rebalancing — tree can degrade."""
+        self.stress_mode = True
+ 
+    def global_rebalance(self) -> dict:
+        """
+        Exit stress mode and rebuild the tree from an in-order walk,
+        restoring the AVL property completely.
+        Returns rotation statistics produced during the repair.
+        """
+        # Collect all flights sorted by code before clearing
+        flights = self.get_in_order_list()
+ 
+        # Reset tree and counters
+        before = dict(self.rotation_count)
+        self.root = None
+        self.stress_mode = False  # rebalancing active again during rebuild
+ 
+        for flight in flights:
+            self.insert(Node(flight))
+ 
+        after = dict(self.rotation_count)
+        return {k: after[k] - before[k] for k in self.rotation_count}   
+    
+    # Rebalancing methods:
+    
     def __check_balance(self, node):
         """Walk upward from a node and rebalance ancestors when needed."""
         if node is None:
@@ -287,7 +455,9 @@ class AVL:
                 self.__balance_lr(node)
             case "RL":
                 self.__balance_rl(node)
-
+                
+    # Rotation methods:  
+    
     def __balance_lr(self, top_node):
         """Apply a left-right double rotation."""
         middle_node = top_node.get_left_child()
@@ -348,7 +518,7 @@ class AVL:
         """Identify which AVL rebalance case applies to a node."""
         if balance_factor > 0:
             child_balance_factor = self.get_balance_factor(node.get_left_child())
-            if child_balance_factor > 0:
+            if child_balance_factor >= 0:
                 return "LL"
             return "LR"
 
@@ -356,7 +526,9 @@ class AVL:
         if child_balance_factor > 0:
             return "RL"
         return "RR"
-
+    
+    # Print
+    
     def print_tree(self):
         """Print the tree structure in ASCII form."""
         if self.root is None:
